@@ -15,13 +15,13 @@
             font-family: 'Inter', sans-serif;
             background-color: #000000; /* Black */
             color: #f8fafc; /* slate-50 */
-            overflow: hidden; /* Prevent scrolling during splash */
+            overflow: hidden; /* Prevent scrolling during splash/sidebar open */
         }
         /* Container for the main app, hidden initially */
         #app-container {
             opacity: 0;
             transition: opacity 0.5s ease-in-out;
-            transition-delay: 1s; /* Delay the fade-in of the app */
+            transition-delay: 0.5s;
         }
         /* Splash screen styles */
         #splash-screen {
@@ -33,17 +33,14 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
-            transition: opacity 0.5s ease-out 9.5s; /* Fade out after animation */
+            transition: opacity 0.5s ease-out 2.5s; /* Start fading out at 2.5s */
         }
         #splash-logo-container {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            /* Animation timing for the logo movement */
-            transition: transform 1s cubic-bezier(0.6, 0, 0.2, 1),
-                        width 1s cubic-bezier(0.6, 0, 0.2, 1),
-                        height 1s cubic-bezier(0.6, 0, 0.2, 1);
+            transition: all 0.8s cubic-bezier(0.6, 0, 0.2, 1);
         }
         #splash-logo {
             width: 288px; /* Approx 3 inches */
@@ -119,18 +116,19 @@
     <!-- Splash Screen -->
     <div id="splash-screen">
         <div id="splash-logo-container">
-            <!-- IMPORTANT: Replace 'YOUR_LOGO_PATH.png' with the actual path to your logo image -->
-            <img id="splash-logo" src="C:\Users\s7730\Finova\Gemini_Generated_Image_s8uz1ys8uz1ys8uz (1).png" alt="Finova Logo">
+            <img id="splash-logo" src="C:\Users\s7730\Finova\image.png" alt="Finova Logo">
         </div>
         <h1 id="splash-text">Finova</h1>
     </div>
 
     <!-- Main App Container -->
-    <div id="app-container" class="flex h-screen bg-black">
+    <div id="app-container" class="relative min-h-screen bg-black">
+        <!-- Sidebar Overlay -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 z-30 hidden"></div>
+        
         <!-- Sidebar -->
-        <nav class="w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0">
+        <nav id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0 transform -translate-x-full transition-transform duration-300 ease-in-out z-40">
             <div id="sidebar-header" class="p-4 h-[72px] flex items-center">
-                 <!-- IMPORTANT: Replace 'YOUR_LOGO_PATH.png' with the actual path to your logo image -->
                 <img id="sidebar-logo" src="C:\Users\s7730\Finova\Screenshot_2025-10-05_185637-removebg-preview.png" alt="Finova Logo" class="w-8 h-8 mr-3 opacity-0"> <!-- Hidden until animation target is needed -->
                 <h1 class="text-2xl font-bold text-white">Finova</h1>
             </div>
@@ -154,115 +152,124 @@
         </nav>
 
         <!-- Main Content -->
-        <main class="flex-1 overflow-y-auto no-scrollbar">
-            
-            <!-- PAGE: Dashboard -->
-            <section id="page-dashboard" class="p-4 md:p-8">
-                <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
-                
-                <!-- Global Markets -->
-                <div class="mb-8">
-                    <h2 class="text-2xl font-semibold mb-4">Global Markets</h2>
-                    <div id="globalMarkets" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        <div class="loader-container flex justify-center items-center col-span-full h-32">
-                            <div class="loader"></div>
+        <main class="flex-1 transition-all duration-300">
+            <!-- Header for ALL screens -->
+            <div class="sticky top-0 z-20 flex items-center justify-between p-4 bg-slate-900/80 backdrop-blur-sm">
+                 <button id="sidebar-toggle" class="text-white p-2">
+                     <i id="menu-open-icon" class="fas fa-bars fa-lg"></i>
+                     <i id="menu-close-icon" class="fas fa-times fa-lg hidden"></i>
+                 </button>
+                 <h1 class="text-xl font-bold text-white lg:hidden">Finova</h1>
+            </div>
+
+            <div id="main-content-pages" class="overflow-y-auto">
+                <!-- PAGE: Dashboard -->
+                <section id="page-dashboard" class="p-4 md:p-8">
+                    <h1 class="text-3xl font-bold mb-6">Dashboard</h1>
+                    
+                    <!-- Global Markets -->
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-semibold mb-4">Global Markets</h2>
+                        <div id="globalMarkets" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div class="loader-container flex justify-center items-center col-span-full h-32">
+                                <div class="loader"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Daily Recommendations -->
-                <div>
-                    <h2 class="text-2xl font-semibold mb-4">Daily Recommendations</h2>
-                    <div id="dailyRecommendations" class="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
-                        <div class="loader-container flex justify-center items-center h-48">
-                            <div class="loader"></div>
+    
+                    <!-- Daily Recommendations -->
+                    <div>
+                        <h2 class="text-2xl font-semibold mb-4">Daily Recommendations</h2>
+                        <div id="dailyRecommendations" class="bg-slate-800 rounded-lg shadow-lg overflow-hidden border border-slate-700">
+                            <div class="loader-container flex justify-center items-center h-48">
+                                <div class="loader"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            <!-- PAGE: Stock Analysis -->
-            <section id="page-analysis" class="p-4 md:p-8 hidden">
-                <div class="container mx-auto max-w-5xl">
-                    <header class="text-center mb-8">
-                        <h1 class="text-4xl md:text-5xl font-bold text-white">Stock Analysis</h1>
-                        <p class="text-slate-400 mt-2">Get a comprehensive analysis of a stock using multiple metrics.</p>
-                    </header>
-                    <main>
-                        <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700 mb-8">
+                </section>
+    
+                <!-- PAGE: Stock Analysis -->
+                <section id="page-analysis" class="p-4 md:p-8 hidden">
+                    <div class="container mx-auto max-w-5xl">
+                        <header class="text-center mb-8">
+                            <h1 class="text-4xl md:text-5xl font-bold text-white">Stock Analysis</h1>
+                            <p class="text-slate-400 mt-2">Get a comprehensive analysis of a stock using multiple metrics.</p>
+                        </header>
+                        <main>
+                            <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700 mb-8">
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <input type="text" id="tickerInput" placeholder="e.g., RELIANCE.NS, TSLA" class="flex-grow bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                                    <button id="analyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
+                                        <span>Analyze</span>
+                                        <i class="fas fa-chart-line ml-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="resultsSection" class="hidden">
+                                <div id="loader" class="flex justify-center items-center py-8 hidden"></div>
+                                <div id="error" class="text-red-400 text-center py-4 hidden bg-slate-800 rounded-xl p-4"></div>
+                                <div id="analysisContainer" class="hidden">
+                                    <h2 id="analysisHeader" class="text-3xl font-bold text-white mb-6 text-center"></h2>
+                                    <div id="analysisContent" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                                </div>
+                            </div>
+                        </main>
+                    </div>
+                </section>
+    
+                <!-- PAGE: Risk & Comparison -->
+                <section id="page-risk" class="p-4 md:p-8 hidden">
+                    <div class="container mx-auto max-w-6xl">
+                        <h1 class="text-3xl font-bold mb-8">Risk & Comparison</h1>
+    
+                        <!-- Risk Analysis Section -->
+                        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8">
+                            <h2 class="text-2xl font-semibold mb-4">Risk Analysis</h2>
+                            <p class="text-slate-400 mb-4">Enter your portfolio and prediction details to calculate risk metrics.</p>
+                            <div class="space-y-4">
+                                <div class="flex flex-col sm:flex-row gap-4">
+                                    <input type="text" id="riskTickerInput" placeholder="Enter one stock symbol (e.g., AAPL)" class="flex-grow bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                                    <input type="number" id="riskPortfolioValueInput" placeholder="Portfolio Value ($)" class="w-full sm:w-1/3 bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <input type="number" id="riskCurrentPriceInput" placeholder="Current Price" class="bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                                    <input type="number" id="riskPredictedPriceInput" placeholder="Predicted Price" class="bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                                    <input type="number" id="riskConfidenceInput" placeholder="Confidence (0-100)" class="bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
+                                </div>
+                                <div class="flex justify-end">
+                                    <button id="riskAnalyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
+                                        <span>Analyze Risk</span>
+                                        <i class="fas fa-shield-alt ml-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="riskResultsSection" class="mt-6 hidden">
+                                <div id="riskLoader" class="flex justify-center items-center py-8 hidden"></div>
+                                <div id="riskError" class="text-red-400 text-center py-4 hidden bg-slate-900 rounded-lg p-4"></div>
+                                <div id="riskContent" class="hidden"></div>
+                            </div>
+                        </div>
+    
+                        <!-- Stock Comparison Section -->
+                        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
+                            <h2 class="text-2xl font-semibold mb-4">Compare Stocks</h2>
                             <div class="flex flex-col sm:flex-row gap-4">
-                                <input type="text" id="tickerInput" placeholder="e.g., RELIANCE.NS, TSLA" class="flex-grow bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
-                                <button id="analyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
-                                    <span>Analyze</span>
-                                    <i class="fas fa-chart-line ml-2"></i>
+                                <input type="text" id="compareTickerInput" placeholder="Enter multiple symbols, comma-separated (e.g., MSFT, GOOGL, AMZN)" class="flex-grow bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition duration-200">
+                                <button id="compareBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
+                                    <span>Compare</span>
+                                    <i class="fas fa-balance-scale ml-2"></i>
                                 </button>
                             </div>
-                        </div>
-                        <div id="resultsSection" class="hidden">
-                            <div id="loader" class="flex justify-center items-center py-8 hidden"></div>
-                            <div id="error" class="text-red-400 text-center py-4 hidden bg-slate-800 rounded-xl p-4"></div>
-                            <div id="analysisContainer" class="hidden">
-                                <h2 id="analysisHeader" class="text-3xl font-bold text-white mb-6 text-center"></h2>
-                                <div id="analysisContent" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                             <div id="compareResultsSection" class="mt-6 hidden">
+                                <div id="compareLoader" class="flex justify-center items-center py-8 hidden"></div>
+                                <div id="compareError" class="text-red-400 text-center py-4 hidden bg-slate-900 rounded-lg p-4"></div>
+                                <div id="compareContent" class="hidden overflow-x-auto"></div>
                             </div>
                         </div>
-                    </main>
-                </div>
-            </section>
-
-            <!-- PAGE: Risk & Comparison -->
-            <section id="page-risk" class="p-4 md:p-8 hidden">
-                <div class="container mx-auto max-w-6xl">
-                    <h1 class="text-3xl font-bold mb-8">Risk & Comparison</h1>
-
-                    <!-- Risk Analysis Section -->
-                    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-8">
-                        <h2 class="text-2xl font-semibold mb-4">Risk Analysis</h2>
-                        <p class="text-slate-400 mb-4">Enter your portfolio and prediction details to calculate risk metrics.</p>
-                        <div class="space-y-4">
-                            <div class="flex flex-col sm:flex-row gap-4">
-                                <input type="text" id="riskTickerInput" placeholder="Enter one stock symbol (e.g., AAPL)" class="flex-grow bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
-                                <input type="number" id="riskPortfolioValueInput" placeholder="Portfolio Value ($)" class="w-full sm:w-1/3 bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <input type="number" id="riskCurrentPriceInput" placeholder="Current Price" class="bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
-                                <input type="number" id="riskPredictedPriceInput" placeholder="Predicted Price" class="bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
-                                <input type="number" id="riskConfidenceInput" placeholder="Confidence (0-100)" class="bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition duration-200">
-                            </div>
-                            <div class="flex justify-end">
-                                <button id="riskAnalyzeBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
-                                    <span>Analyze Risk</span>
-                                    <i class="fas fa-shield-alt ml-2"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="riskResultsSection" class="mt-6 hidden">
-                            <div id="riskLoader" class="flex justify-center items-center py-8 hidden"></div>
-                            <div id="riskError" class="text-red-400 text-center py-4 hidden bg-slate-900 rounded-lg p-4"></div>
-                            <div id="riskContent" class="hidden"></div>
-                        </div>
+    
                     </div>
-
-                    <!-- Stock Comparison Section -->
-                    <div class="bg-slate-800 border border-slate-700 rounded-xl p-6">
-                        <h2 class="text-2xl font-semibold mb-4">Compare Stocks</h2>
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <input type="text" id="compareTickerInput" placeholder="Enter multiple symbols, comma-separated (e.g., MSFT, GOOGL, AMZN)" class="flex-grow bg-slate-700 text-white placeholder-slate-400 border border-slate-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition duration-200">
-                            <button id="compareBtn" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 shadow-md flex items-center justify-center">
-                                <span>Compare</span>
-                                <i class="fas fa-balance-scale ml-2"></i>
-                            </button>
-                        </div>
-                         <div id="compareResultsSection" class="mt-6 hidden">
-                            <div id="compareLoader" class="flex justify-center items-center py-8 hidden"></div>
-                            <div id="compareError" class="text-red-400 text-center py-4 hidden bg-slate-900 rounded-lg p-4"></div>
-                            <div id="compareContent" class="hidden overflow-x-auto"></div>
-                        </div>
-                    </div>
-
-                </div>
-            </section>
-
+                </section>
+            </div>
         </main>
     </div>
 
@@ -276,7 +283,6 @@
             const appContainer = document.getElementById('app-container');
             const sidebarLogo = document.getElementById('sidebar-logo');
 
-            // 1. Start the animation sequence after a long pause
             setTimeout(() => {
                 const sidebarLogoRect = sidebarLogo.getBoundingClientRect();
                 const splashLogoRect = splashLogoContainer.getBoundingClientRect();
@@ -290,25 +296,28 @@
                     splashLogoContainer.style.transform = `translate(${deltaX}px, ${deltaY}px) scale(${scale})`;
                 }, 400); 
 
-            }, 8500); 
+            }, 1500); 
 
-            // 2. Hide splash screen and show app after animation
             setTimeout(() => {
                 splashScreen.style.opacity = '0';
                 appContainer.style.opacity = '1';
                 sidebarLogo.style.opacity = '1'; 
                 document.body.style.overflow = 'auto';
-            }, 9500); 
+            }, 2500); 
 
-            // 3. Remove splash screen from DOM after it fades out completely
             setTimeout(() => {
                 if(splashScreen) {
                    splashScreen.remove();
                 }
-            }, 10000); 
+            }, 3000); 
 
 
             // --- DOM Element References ---
+            const sidebar = document.getElementById('sidebar');
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const menuOpenIcon = document.getElementById('menu-open-icon');
+            const menuCloseIcon = document.getElementById('menu-close-icon');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
             const sidebarLinks = document.querySelectorAll('.sidebar-link');
             const pages = {
                 'dashboard': document.getElementById('page-dashboard'),
@@ -344,6 +353,20 @@
 
             // --- State ---
             let isDashboardDataLoaded = false;
+            
+            // --- Sidebar Toggle Logic ---
+            function toggleSidebar() {
+                sidebar.classList.toggle('-translate-x-full');
+                sidebarOverlay.classList.toggle('hidden');
+                menuOpenIcon.classList.toggle('hidden');
+                menuCloseIcon.classList.toggle('hidden');
+                const isSidebarOpen = !sidebar.classList.contains('-translate-x-full');
+                document.body.style.overflow = isSidebarOpen ? 'hidden' : 'auto';
+            }
+
+            sidebarToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+
 
             // --- Page Navigation Logic ---
             function showPage(pageId) {
@@ -367,6 +390,10 @@
                     const pageId = link.getAttribute('href').substring(1);
                     window.location.hash = pageId;
                     showPage(pageId);
+                    // Close sidebar after navigation on any screen size
+                    if (!sidebar.classList.contains('-translate-x-full')) {
+                        toggleSidebar();
+                    }
                 });
             });
 
