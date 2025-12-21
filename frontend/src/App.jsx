@@ -1,63 +1,17 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { 
-  LayoutDashboard, 
-  Wallet, 
-  PieChart, 
-  ArrowRightLeft, 
-  Settings, 
-  Bell, 
-  Search, 
-  Menu,
-  CreditCard,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-  MoreHorizontal,
-  Activity,
-  AlertCircle,
-  Globe,
-  Brain, 
-  X,
-  CheckCircle2,
-  Loader2,
-  Lock, 
-  Crown,
-  Plus,
-  Trash2, 
-  Filter,
-  Copy,
-  User,
-  Mail,
-  Shield,
-  LogOut,
-  Moon,
-  Sun,
-  Edit3,
-  Briefcase,
-  Minus,
-  BarChart2,
-  RefreshCw,
-  Wifi,
-  WifiOff,
-  CloudLightning, // Yahoo
-  Zap // Alpha Vantage
+  LayoutDashboard, Wallet, PieChart, ArrowRightLeft, Settings, Bell, Search, Menu, 
+  CreditCard, TrendingUp, ArrowUpRight, ArrowDownRight, Activity, AlertCircle, 
+  Globe, Brain, X, CheckCircle2, Loader2, Lock, Crown, Plus, Trash2, Filter, Copy, 
+  User, Mail, Shield, LogOut, Moon, Sun, Edit3, Briefcase, Minus, BarChart2, 
+  RefreshCw, Wifi, WifiOff, CloudLightning, Zap 
 } from 'lucide-react';
 import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
-  Legend
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart as RePieChart, Pie, Cell 
 } from 'recharts';
 
 // --- CONFIGURATION ---
-// PASTE YOUR KEYS HERE
 const ALPHA_VANTAGE_API_KEY = "MM4DAC36S2M5Z8XC"; 
 const TWELVE_DATA_API_KEY = "2b701a7213fd48f59edf447a987c2f78"; 
 
@@ -89,38 +43,44 @@ const toggleStyles = `
 .input:checked + .toggle .star--4, .input:checked + .toggle .star--5, .input:checked + .toggle .star--6 { opacity: 1; transform: translate3d(0, 0, 0); }
 `;
 
-// Colors for Pie Chart
+// Colors & Constants
 const PIE_COLORS = ['#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
-
-// Categories List
 const CATEGORIES = ["Entertainment", "Food & Dining", "Shopping", "Transport", "Bills & Utilities", "Salary", "Investment", "Freelance", "Other"];
-
-// Card Gradients
 const CARD_GRADIENTS = ['from-violet-600 to-indigo-600', 'from-emerald-500 to-teal-600', 'from-orange-500 to-rose-500', 'from-blue-500 to-cyan-500', 'from-slate-700 to-slate-900'];
 
 export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   
-  // --- STATE WITH PERSISTENCE ---
+  // --- CORE STATE & THEME ---
+  // Define these first to avoid ReferenceErrors
   const [isDarkMode, setIsDarkMode] = useState(() => { try { return JSON.parse(localStorage.getItem('finova_darkMode')) || false; } catch { return false; } });
+  
+  const theme = {
+    appBg: isDarkMode ? 'bg-slate-950' : 'bg-slate-50',
+    textMain: isDarkMode ? 'text-white' : 'text-slate-900',
+    textSub: isDarkMode ? 'text-slate-400' : 'text-slate-500',
+    cardBg: isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200',
+    headerBg: isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200',
+    inputBg: isDarkMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500',
+    hoverBg: isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100',
+    gridColor: isDarkMode ? '#334155' : '#e2e8f0',
+    tooltipBg: isDarkMode ? '#1e293b' : '#ffffff',
+    modalBg: isDarkMode ? 'bg-slate-900' : 'bg-white',
+  };
+
+  // --- USER & NOTIFICATIONS STATE ---
   const [userPlan, setUserPlan] = useState(() => { try { return localStorage.getItem('finova_userPlan') || 'free'; } catch { return 'free'; } });
   const [userProfile, setUserProfile] = useState(() => { try { const saved = localStorage.getItem('finova_profile'); return saved ? JSON.parse(saved) : { name: 'John Doe', email: 'john@finova.com' }; } catch { return { name: 'John Doe', email: 'john@finova.com' }; } });
-  
-  // --- NOTIFICATIONS STATE ---
   const [showNotifications, setShowNotifications] = useState(false);
-  const notifications = [
-    { id: 1, title: 'Stock Alert', message: 'Reliance hit 52-week high!', time: '2h ago', type: 'positive' },
-    { id: 2, title: 'High Spending', message: 'Entertainment budget exceeded.', time: '5h ago', type: 'negative' },
-    { id: 3, title: 'Bill Due', message: 'Credit card bill due in 3 days.', time: '1d ago', type: 'neutral' }
-  ];
-
+  
+  // --- DATA STATE ---
   const [transactions, setTransactions] = useState(() => {
     try { 
       const saved = localStorage.getItem('finova_transactions'); 
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return parsed; // Strict check
       }
     } catch (e) { console.error(e); }
     return [
@@ -133,11 +93,17 @@ export default function App() {
   });
 
   const [budgets, setBudgets] = useState(() => {
-    try { const saved = localStorage.getItem('finova_budgets'); return saved ? JSON.parse(saved) : { "Entertainment": 2000, "Food & Dining": 5000, "Shopping": 5000, "Transport": 3000, "Bills & Utilities": 10000, "Other": 1000 }; } catch { return {}; }
+    try { const saved = localStorage.getItem('finova_budgets'); return saved ? JSON.parse(saved) : { "Entertainment": 2000, "Food & Dining": 5000, "Shopping": 5000, "Transport": 3000, "Bills & Utilities": 10000, "Other": 1000 }; } catch { return { "Other": 1000 }; }
   });
 
   const [cards, setCards] = useState(() => {
-    try { const saved = localStorage.getItem('finova_cards'); if (saved) return JSON.parse(saved); } catch (e) {}
+    try { 
+      const saved = localStorage.getItem('finova_cards'); 
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
     return [
       { id: 1, bank: 'HDFC Bank', number: '4532 **** **** 8896', holder: 'JOHN DOE', expiry: '12/28', type: 'Visa', gradient: 'from-violet-600 to-indigo-600' },
       { id: 2, bank: 'SBI Card', number: '5412 **** **** 1023', holder: 'JOHN DOE', expiry: '09/25', type: 'Mastercard', gradient: 'from-emerald-500 to-teal-600' }
@@ -145,7 +111,14 @@ export default function App() {
   });
 
   const [portfolio, setPortfolio] = useState(() => {
-    try { const saved = localStorage.getItem('finova_portfolio'); return saved ? JSON.parse(saved) : []; } catch { return []; }
+    try { 
+      const saved = localStorage.getItem('finova_portfolio'); 
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch { }
+    return [];
   });
 
   // --- SAVE TO LOCALSTORAGE ---
@@ -157,8 +130,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('finova_budgets', JSON.stringify(budgets)); }, [budgets]);
   useEffect(() => { localStorage.setItem('finova_portfolio', JSON.stringify(portfolio)); }, [portfolio]);
 
-  // Stock Data States
-  const [stockData, setStockData] = useState([]); // Default empty, load on search
+  // Market Data States
+  const [stockData, setStockData] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -199,30 +172,16 @@ export default function App() {
   const [editingBudgetCategory, setEditingBudgetCategory] = useState(null);
   const [newBudgetLimit, setNewBudgetLimit] = useState('');
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const notifications = [
+    { id: 1, title: 'Welcome', message: 'Set up your budget to get started.', time: 'Just now', type: 'positive' }
+  ];
 
-  // --- THEME ---
-  const theme = {
-    appBg: isDarkMode ? 'bg-slate-950' : 'bg-slate-50',
-    textMain: isDarkMode ? 'text-white' : 'text-slate-900',
-    textSub: isDarkMode ? 'text-slate-400' : 'text-slate-500',
-    cardBg: isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200',
-    headerBg: isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200',
-    inputBg: isDarkMode ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500',
-    hoverBg: isDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100',
-    gridColor: isDarkMode ? '#334155' : '#e2e8f0',
-    tooltipBg: isDarkMode ? '#1e293b' : '#ffffff',
-    modalBg: isDarkMode ? 'bg-slate-900' : 'bg-white',
-  };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   // --- FINANCIAL CALCULATIONS ---
   const financials = useMemo(() => {
-    let income = 0;
-    let expense = 0;
-    transactions.forEach(t => {
-      if (t.type === 'credit') income += t.amount;
-      else expense += t.amount;
-    });
+    let income = 0; let expense = 0;
+    transactions.forEach(t => { if (t.type === 'credit') income += t.amount; else expense += t.amount; });
     return { income, expense, balance: income - expense };
   }, [transactions]);
 
@@ -236,102 +195,94 @@ export default function App() {
 
   const expenseBreakdown = useMemo(() => {
     const categories = {};
-    transactions.filter(t => t.type === 'debit').forEach(t => {
-      const cat = t.category || "Other";
-      categories[cat] = (categories[cat] || 0) + t.amount;
-    });
+    transactions.filter(t => t.type === 'debit').forEach(t => { const cat = t.category || "Other"; categories[cat] = (categories[cat] || 0) + t.amount; });
     return Object.keys(categories).map(name => ({ name, value: categories[name] }));
   }, [transactions]);
 
   const budgetProgress = useMemo(() => {
     return expenseBreakdown.map(item => {
       const limit = budgets[item.name] || 0;
-      return {
-        category: item.name,
-        spent: item.value,
-        limit: limit,
-        percentage: limit > 0 ? (item.value / limit) * 100 : 0
-      };
+      return { category: item.name, spent: item.value, limit: limit, percentage: limit > 0 ? (item.value / limit) * 100 : 0 };
     }).sort((a, b) => b.percentage - a.percentage);
   }, [expenseBreakdown, budgets]);
 
   const chartData = useMemo(() => {
     const data = [{ name: 'Mon'}, { name: 'Tue'}, { name: 'Wed'}, { name: 'Thu'}, { name: 'Fri'}, { name: 'Sat'}, { name: 'Sun'}];
-    return data.map(d => ({
-      name: d.name,
-      income: Math.floor(Math.random() * (financials.income / 2)) + (financials.income / 10),
-      expense: Math.floor(Math.random() * (financials.expense / 2)) + (financials.expense / 10)
-    }));
+    return data.map(d => ({ name: d.name, income: Math.floor(Math.random() * (financials.income / 2)), expense: Math.floor(Math.random() * (financials.expense / 2)) }));
   }, [financials]);
 
+  // --- API FETCHING LOGIC ---
 
-  // ---------------------------------------------
-  // --- MULTI-TIER DATA FETCHING STRATEGY ---
-  // ---------------------------------------------
+  const checkResponse = (response) => {
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("text/html")) {
+      throw new Error("Proxy Error: The server returned HTML instead of JSON. Please restart your Vite server (Ctrl+C, npm run dev).");
+    }
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+  }
 
   const fetchAlphaVantage = async (symbol) => {
-    if (!ALPHA_VANTAGE_API_KEY) throw new Error("No AV Key");
+    if (!ALPHA_VANTAGE_API_KEY) throw new Error("No Alpha Vantage Key provided.");
+    
     const response = await fetch(`/api/alpha/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${ALPHA_VANTAGE_API_KEY}`);
+    checkResponse(response);
     const data = await response.json();
     
-    if (data.Note || data.Information) throw new Error("AV Limit");
-    
-    const quote = data['Global Quote'];
-    if (!quote || !quote['01. symbol']) throw new Error("AV No Data");
+    if (data.Note || data.Information) throw new Error("Alpha Vantage API Limit Reached (5 calls/min).");
+    if (!data['Global Quote'] || !data['Global Quote']['01. symbol']) throw new Error("Stock not found in Alpha Vantage.");
 
+    const quote = data['Global Quote'];
     return {
       id: quote['01. symbol'],
       symbol: quote['01. symbol'],
-      name: quote['01. symbol'], // AV Quote lacks name, use symbol
+      name: quote['01. symbol'],
       current_price: parseFloat(quote['05. price']),
       percent_change: parseFloat(quote['10. change percent'].replace('%', '')),
       currency: symbol.includes('.') ? 'INR' : 'USD', 
       exchange: symbol.includes('BSE') || symbol.includes('NS') ? 'India' : 'US',
-      source: 'Alpha Vantage (Primary)'
+      source: 'Alpha Vantage'
     };
   };
 
   const fetchTwelveData = async (symbol) => {
-    if (symbol.includes('.NS') || symbol.includes('.BO')) throw new Error("Twelve Data Free Tier doesn't support India");
-    if (!TWELVE_DATA_API_KEY) throw new Error("No TD Key");
-    
+    // Free tier Twelve Data does NOT support NSE/BSE
+    if (symbol.includes('.NS') || symbol.includes('.BO') || symbol.includes('.BSE')) throw new Error("Twelve Data Free Tier does not support Indian Stocks.");
+    if (!TWELVE_DATA_API_KEY) throw new Error("No Twelve Data Key provided.");
+
     const response = await fetch(`/api/twelve/quote?symbol=${symbol}&apikey=${TWELVE_DATA_API_KEY}`);
+    checkResponse(response);
     const json = await response.json();
 
     if (json.code && json.code !== 200) throw new Error(json.message);
-    if (!json.symbol) throw new Error("TD No Data");
+    if (!json.symbol) throw new Error("Stock not found in Twelve Data.");
 
     return {
       id: json.symbol,
       symbol: json.symbol, 
       name: json.name,
-      current_price: parseFloat(json.close) || parseFloat(json.open) || 0,
-      percent_change: parseFloat(json.percent_change) || 0,
+      current_price: parseFloat(json.close),
+      percent_change: parseFloat(json.percent_change),
       currency: json.currency,
       exchange: json.exchange,
-      source: 'Twelve Data (US Fallback)'
+      source: 'Twelve Data'
     };
   };
 
   const fetchYahooFinance = async (symbol) => {
-    // CORRECT SYMBOL MAPPING FOR YAHOO
+    // Yahoo specific formatting
     let yahooSymbol = symbol;
-    // Yahoo uses .BO for BSE (Alpha Vantage uses .BSE)
-    if (yahooSymbol.includes('.BSE')) {
-        yahooSymbol = yahooSymbol.replace('.BSE', '.BO');
-    }
+    if (yahooSymbol.includes('.BSE')) yahooSymbol = yahooSymbol.replace('.BSE', '.BO');
 
     const response = await fetch(`/api/yahoo/v8/finance/chart/${yahooSymbol}?interval=1d&range=1d&t=${Date.now()}`);
-    if (!response.ok) throw new Error("Yahoo API Error");
-    
+    checkResponse(response);
     const json = await response.json();
-    const result = json.chart?.result?.[0];
-    if (!result) throw new Error("Yahoo No Data");
+    
+    if (!json.chart || !json.chart.result || json.chart.result.length === 0) throw new Error("Yahoo Finance returned no data.");
 
+    const result = json.chart.result[0];
     const meta = result.meta;
     const quote = result.indicators.quote[0];
     const price = meta.regularMarketPrice || (quote.close && quote.close[quote.close.length - 1]) || 0;
-    
     const prevClose = meta.chartPreviousClose || meta.previousClose || price;
     const changePct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
 
@@ -343,285 +294,163 @@ export default function App() {
       percent_change: changePct,
       currency: meta.currency,
       exchange: meta.exchangeName,
-      source: 'Yahoo Finance (Delayed/Backup)'
+      source: 'Yahoo Finance'
     };
   };
 
-  // --- SMART SEARCH SYMBOL RESOLVER ---
-  // Tries to find the correct symbol for a name (e.g. "Reliance" -> "RELIANCE.BSE")
-  const findSymbol = async (query) => {
-    // 1. Try Alpha Vantage Search (Best for Indian Stocks on free tier)
-    if (ALPHA_VANTAGE_API_KEY) {
-      try {
-        const response = await fetch(`/api/alpha/query?function=SYMBOL_SEARCH&keywords=${query}&apikey=${ALPHA_VANTAGE_API_KEY}`);
-        const data = await response.json();
-        if (data.bestMatches && data.bestMatches.length > 0) {
-          return data.bestMatches[0]['1. symbol'];
-        }
-      } catch (e) {
-        console.warn("AV Search failed/skipped", e);
-      }
-    }
-
-    // 2. Try Yahoo Finance Search (Robust Backup for Names)
-    try {
-      const response = await fetch(`/api/yahoo/v1/finance/search?q=${query}&quotesCount=1`);
-      const data = await response.json();
-      if (data.quotes && data.quotes.length > 0) {
-        let sym = data.quotes[0].symbol;
-        // Convert Yahoo's .BO to .BSE for consistency if needed, but our fetchYahooFinance handles mapping.
-        // Let's return as is, and let the fetchers handle it.
-        return sym;
-      }
-    } catch (e) {
-      console.warn("Yahoo Search failed", e);
-    }
-    
-    // 3. Fallback: Return query as is (assume user typed symbol)
-    return query.toUpperCase();
-  };
-
-  // --- MASTER SEARCH HANDLER ---
   const handleSearch = async () => {
-    if (!searchQuery.trim()) { 
-       setStockData([]); // Clear on empty
-       setDataSource('');
-       return; 
-    }
+    if (!searchQuery.trim()) return;
     setLoading(true);
     setError(null);
-    setStockData([]); // Clear previous
+    setStockData([]); // Clear previous results
+
+    const symbol = searchQuery.toUpperCase().trim();
 
     try {
-      // Step A: Find the correct Symbol
-      const resolvedSymbol = await findSymbol(searchQuery);
-      if (!resolvedSymbol) throw new Error("Symbol not found");
-
-      // Step B: Fetch Data with Fallback Strategy
-      
-      // 1. Try Primary (Alpha Vantage)
+      // 1. Try Primary: Alpha Vantage
       try {
-        const avData = await fetchAlphaVantage(resolvedSymbol);
-        setStockData([avData]);
-        setDataSource(avData.source);
+        const data = await fetchAlphaVantage(symbol);
+        setStockData([data]);
+        setDataSource(data.source);
         setLastUpdated(new Date());
         setLoading(false);
-        return;
+        return; // Success
       } catch (e) {
-        console.warn("Alpha Vantage skipped/failed:", e.message);
+        console.warn(`AV Failed: ${e.message}`);
       }
 
-      // 2. Try Twelve Data (Only if likely US stock or if AV failed)
+      // 2. Try Secondary: Twelve Data (Only for US stocks if AV fails)
       try {
-        const tdData = await fetchTwelveData(resolvedSymbol);
-        setStockData([tdData]);
-        setDataSource(tdData.source);
+        const data = await fetchTwelveData(symbol);
+        setStockData([data]);
+        setDataSource(data.source);
         setLastUpdated(new Date());
         setLoading(false);
-        return;
+        return; // Success
       } catch (e) {
-        console.warn("Twelve Data skipped/failed:", e.message);
+        console.warn(`Twelve Data Failed: ${e.message}`);
       }
 
-      // 3. Try Yahoo Finance (Last Resort)
+      // 3. Try Fallback: Yahoo Finance
       try {
-        const yahooData = await fetchYahooFinance(resolvedSymbol);
-        setStockData([yahooData]);
-        setDataSource(yahooData.source);
+        const data = await fetchYahooFinance(symbol);
+        setStockData([data]);
+        setDataSource(data.source);
         setLastUpdated(new Date());
         setLoading(false);
-        return;
+        return; // Success
       } catch (e) {
-        console.warn("Yahoo failed:", e.message);
+        console.warn(`Yahoo Failed: ${e.message}`);
       }
 
-      throw new Error("All data sources failed or limited.");
+      throw new Error("All data sources failed. Please check the symbol or try again later.");
 
     } catch (err) {
-      console.error(err);
-      setError(`Could not fetch data. ${err.message}`);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAnalyze = async (stock) => {
-    setAnalyzingStock(stock);
-    setAnalysisModalOpen(true);
-    setIsAnalyzing(true);
-    setAnalysisError(null);
-    setAnalysisResult(null);
+  // --- CHARTING ---
+  const handleShowChart = async (stock, range = '1mo') => {
+    setChartStock(stock); setChartRange(range); setChartLoading(true); setIsChartModalOpen(true);
+    
+    // We try Yahoo Finance for history as AV free tier history is very limited
+    let interval = '1d';
+    if (range === '1d') interval = '5m';
+    
+    let yahooSymbol = stock.symbol;
+    if (yahooSymbol.includes('.BSE')) yahooSymbol = yahooSymbol.replace('.BSE', '.BO');
 
+    try {
+        const response = await fetch(`/api/yahoo/v8/finance/chart/${yahooSymbol}?interval=${interval}&range=${range}`);
+        checkResponse(response);
+        const json = await response.json();
+        const result = json.chart.result[0];
+        const quotes = result.indicators.quote[0].close;
+        const timestamps = result.timestamp;
+        
+        const historyData = timestamps.map((ts, i) => ({
+            date: new Date(ts * 1000).toLocaleDateString(undefined, {month: 'short', day: 'numeric', hour: range === '1d' ? '2-digit' : undefined}),
+            price: quotes[i]
+        })).filter(p => p.price);
+
+        setChartHistory(historyData);
+    } catch(e) {
+        console.error(e);
+        setChartHistory([]); // Empty chart on error
+    } finally {
+        setChartLoading(false);
+    }
+  };
+
+  // --- AI ANALYSIS ---
+  const handleAnalyze = async (stock) => {
+    setAnalyzingStock(stock); setAnalysisModalOpen(true); setIsAnalyzing(true); setAnalysisError(null); setAnalysisResult(null);
     try {
       const response = await fetch('/ai-endpoint', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          symbol: stock.symbol,
-          prediction_days: 7,
-          analysis_mode: "deep",
-          user_position: "dont_own"
-        }),
+        body: JSON.stringify({ symbol: stock.symbol, prediction_days: 7, analysis_mode: "deep", user_position: "dont_own" }),
       });
-
-      if (!response.ok) {
-         const errText = await response.text();
-         throw new Error(`Analysis Failed: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error("Analysis Service Unavailable");
       const data = await response.json();
       
-      const oneDayPred = data.predictions?.['1_day'] || {};
-      const sevenDayPred = data.predictions?.['7_day'] || {};
-      const sentiment = sevenDayPred.change_percent > 0 ? "Bullish" : (sevenDayPred.change_percent < 0 ? "Bearish" : "Neutral");
-      
-      const mappedResult = {
-        recommendation: sentiment, 
-        confidence_score: (data.confidence || 0) / 100, 
-        forecast_value: oneDayPred.predicted_price?.toFixed(2),
-        current_price: data.current_price?.toFixed(2),
-        summary: data.reasoning?.technical_factors?.slice(0, 3).join(". ") || "Analysis completed successfully."
-      };
-      
-      setAnalysisResult({ ...data, ...mappedResult }); 
+      const oneDay = data.predictions?.['1_day'] || {};
+      const sentiment = (oneDay.change_percent || 0) > 0 ? "Bullish" : "Bearish";
 
+      setAnalysisResult({
+          recommendation: sentiment,
+          confidence_score: (data.confidence || 75) / 100,
+          forecast_value: oneDay.predicted_price?.toFixed(2) || "N/A",
+          current_price: stock.current_price.toFixed(2),
+          summary: data.reasoning?.technical_factors?.[0] || "AI Analysis completed."
+      });
     } catch (err) {
-      console.error("AI Analysis Error:", err);
-      // Fallback Demo Data
-      setTimeout(() => {
-        setAnalysisResult({
-          recommendation: "Bullish (Demo)",
-          confidence_score: 0.85,
-          forecast_value: (stock.current_price * 1.01).toFixed(2),
-          current_price: stock.current_price,
-          predictions: {
-            '1_day': { predicted_price: stock.current_price * 1.01, change_percent: 1.0 },
-            '7_day': { predicted_price: stock.current_price * 1.05, change_percent: 5.0 },
-            '30_day': { predicted_price: stock.current_price * 1.10, change_percent: 10.0 }
-          },
-          reasoning: { technical_factors: ['Price above 50-day moving average'], fundamental_factors: ['Strong quarterly earnings expected'], pattern_factors: ['Bullish flag pattern detected'] },
-          risk_management: { stop_loss: stock.current_price * 0.95, take_profit: stock.current_price * 1.15, risk_reward_ratio: 3.0 },
-          technical_analysis: { chart_sentiment: 'Bullish' },
-          summary: `AI model predicts a bullish trend for ${stock.symbol}. Recommend entry at current levels.`
-        });
-        setAnalysisError(null);
-      }, 1500);
+      setAnalysisError("AI Service is currently offline. Please try again later.");
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const handleAddTransaction = () => {
-    if (!newTransaction.name || !newTransaction.amount) return;
-    const transaction = {
-      id: Date.now(),
-      name: newTransaction.name,
-      amount: parseFloat(newTransaction.amount),
-      type: newTransaction.type,
-      category: newTransaction.category,
-      date: new Date().toISOString().split('T')[0]
-    };
-    setTransactions([transaction, ...transactions]);
-    setNewTransaction({ name: '', amount: '', type: 'debit', category: 'Other' });
-    setIsTransactionModalOpen(false);
-  };
-
-  const handleDeleteTransaction = (id) => {
-    setTransactions(transactions.filter(t => t.id !== id));
-  };
-
-  const handleAddCard = () => {
-    if (!newCard.number) return;
-    const card = {
-      id: Date.now(),
-      bank: newCard.bank || 'New Bank',
-      number: newCard.number,
-      holder: userProfile.name.toUpperCase(),
-      expiry: newCard.expiry || '12/99',
-      type: newCard.type,
-      gradient: newCard.gradient
-    };
-    setCards([...cards, card]);
-    setNewCard({ bank: '', number: '', expiry: '', type: 'Visa', gradient: CARD_GRADIENTS[0] });
-    setIsCardModalOpen(false);
-  };
-
-  const handleDeleteCard = (id) => {
-    setCards(cards.filter(c => c.id !== id));
-  };
-
-  const handleResetApp = () => {
-    if (confirm("Reset all data?")) {
-      localStorage.clear();
-      window.location.reload();
-    }
-  };
-
-  const updateBudget = (category) => {
-    if (!newBudgetLimit) return;
-    setBudgets({ ...budgets, [category]: parseFloat(newBudgetLimit) });
-    setEditingBudgetCategory(null);
-    setNewBudgetLimit('');
-  };
-
-  const openBuyModal = (stock) => { setSelectedStock(stock); setTradeQuantity(1); setIsBuyModalOpen(true); };
-  const openSellModal = (stock) => {
-    const holding = portfolio.find(p => p.symbol === stock.symbol);
-    if (holding) { setSelectedStock({ ...stock, current_price: stock.avgPrice, name: stock.name }); setTradeQuantity(1); setIsSellModalOpen(true); }
-  };
-
+  // --- OTHER HANDLERS ---
+  const handleAddTransaction = () => { if (!newTransaction.name || !newTransaction.amount) return; setTransactions([{id: Date.now(), ...newTransaction, amount: parseFloat(newTransaction.amount), date: new Date().toISOString().split('T')[0]}, ...transactions]); setNewTransaction({name:'', amount:'', type:'debit', category:'Other'}); setIsTransactionModalOpen(false); };
+  const handleDeleteTransaction = (id) => setTransactions(transactions.filter(t => t.id !== id));
+  const handleAddCard = () => { if(!newCard.number) return; setCards([...cards, {id: Date.now(), ...newCard, holder: userProfile.name.toUpperCase()}]); setIsCardModalOpen(false); };
+  const handleDeleteCard = (id) => setCards(cards.filter(c => c.id !== id));
+  const updateBudget = (cat) => { if(!newBudgetLimit) return; setBudgets({...budgets, [cat]: parseFloat(newBudgetLimit)}); setEditingBudgetCategory(null); };
+  const handleResetApp = () => { if(confirm("Reset data?")) { localStorage.clear(); window.location.reload(); }};
+  const getCurrencySymbol = (c) => c === 'INR' ? '₹' : (c === 'USD' ? '$' : c);
+  
+  // Buy/Sell Handlers
+  const openBuyModal = (s) => { setSelectedStock(s); setTradeQuantity(1); setIsBuyModalOpen(true); };
+  const openSellModal = (s) => { const h = portfolio.find(p => p.symbol === s.symbol); if(h) { setSelectedStock({...s, current_price: s.avgPrice}); setTradeQuantity(1); setIsSellModalOpen(true); }};
   const executeBuy = () => {
-    if (!selectedStock) return;
-    const cost = selectedStock.current_price * tradeQuantity;
-    const transaction = { id: Date.now(), name: `Buy ${selectedStock.symbol} (${tradeQuantity} qty)`, amount: cost, type: 'debit', category: 'Investment', date: new Date().toISOString().split('T')[0] };
-    setTransactions([transaction, ...transactions]);
-    const existingHolding = portfolio.find(p => p.symbol === selectedStock.symbol);
-    let newPortfolio;
-    if (existingHolding) {
-      newPortfolio = portfolio.map(p => p.symbol === selectedStock.symbol ? { ...p, quantity: p.quantity + parseFloat(tradeQuantity), avgPrice: (p.avgPrice * p.quantity + cost) / (p.quantity + parseFloat(tradeQuantity)) } : p);
-    } else {
-      newPortfolio = [...portfolio, { symbol: selectedStock.symbol, name: selectedStock.name, quantity: parseFloat(tradeQuantity), avgPrice: selectedStock.current_price, currency: selectedStock.currency }];
-    }
-    setPortfolio(newPortfolio);
-    setIsBuyModalOpen(false);
+      const cost = selectedStock.current_price * tradeQuantity;
+      setTransactions([{id: Date.now(), name: `Buy ${selectedStock.symbol}`, amount: cost, type: 'debit', category: 'Investment', date: new Date().toISOString().split('T')[0]}, ...transactions]);
+      const exists = portfolio.find(p => p.symbol === selectedStock.symbol);
+      if(exists) setPortfolio(portfolio.map(p => p.symbol === selectedStock.symbol ? {...p, quantity: p.quantity + parseFloat(tradeQuantity)} : p));
+      else setPortfolio([...portfolio, {symbol: selectedStock.symbol, name: selectedStock.name, quantity: parseFloat(tradeQuantity), avgPrice: selectedStock.current_price}]);
+      setIsBuyModalOpen(false);
   };
-
   const executeSell = () => {
-    if (!selectedStock) return;
-    const saleValue = selectedStock.current_price * tradeQuantity;
-    const transaction = { id: Date.now(), name: `Sell ${selectedStock.symbol} (${tradeQuantity} qty)`, amount: saleValue, type: 'credit', category: 'Investment', date: new Date().toISOString().split('T')[0] };
-    setTransactions([transaction, ...transactions]);
-    const existingHolding = portfolio.find(p => p.symbol === selectedStock.symbol);
-    if (existingHolding) {
-      if (existingHolding.quantity <= tradeQuantity) setPortfolio(portfolio.filter(p => p.symbol !== selectedStock.symbol));
-      else setPortfolio(portfolio.map(p => p.symbol === selectedStock.symbol ? { ...p, quantity: p.quantity - parseFloat(tradeQuantity) } : p));
-    }
-    setIsSellModalOpen(false);
-  };
-
-  const getCurrencySymbol = (currency) => {
-    switch(currency) { case 'INR': return '₹'; case 'USD': return '$'; case 'EUR': return '€'; case 'GBP': return '£'; default: return currency + ' '; }
-  };
-
-  // --- CHARTING MOCK (Since API Key needed for history) ---
-  const handleShowChart = async (stock, range = '1mo') => {
-    setChartStock(stock); setChartRange(range); setChartLoading(true); setIsChartModalOpen(true);
-    setTimeout(() => {
-      const dataPoints = range === '1d' ? 24 : (range === '1mo' ? 30 : 12);
-      const history = [];
-      let price = stock.current_price * 0.9; 
-      for (let i = 0; i < dataPoints; i++) {
-        const volatility = (Math.random() - 0.45) * 0.05; 
-        price = price * (1 + volatility);
-        let label = `${i+1}`; if (range === '1d') label = `${i}:00`; if (range === '1mo') label = `Day ${i+1}`;
-        history.push({ date: label, price: price });
-      }
-      setChartHistory(history); setChartLoading(false);
-    }, 600);
+      const val = selectedStock.current_price * tradeQuantity;
+      setTransactions([{id: Date.now(), name: `Sell ${selectedStock.symbol}`, amount: val, type: 'credit', category: 'Investment', date: new Date().toISOString().split('T')[0]}, ...transactions]);
+      const exists = portfolio.find(p => p.symbol === selectedStock.symbol);
+      if(exists.quantity <= tradeQuantity) setPortfolio(portfolio.filter(p => p.symbol !== selectedStock.symbol));
+      else setPortfolio(portfolio.map(p => p.symbol === selectedStock.symbol ? {...p, quantity: p.quantity - parseFloat(tradeQuantity)} : p));
+      setIsSellModalOpen(false);
   };
 
   const handleManualRefresh = () => {
-    if (searchQuery) handleSearch();
+    if (!canRefresh) return;
+    setCanRefresh(false);
+    setTimeout(() => setCanRefresh(true), 5000); 
+
+    if (searchQuery) {
+      handleSearch();
+    } 
   };
 
   return (
@@ -633,10 +462,7 @@ export default function App() {
         
         <aside className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-slate-900 text-white transform transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
           <div className="h-full flex flex-col">
-            <div className="p-6 flex items-center gap-3 border-b border-slate-800">
-              <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center"><Wallet className="text-white" size={20} /></div>
-              <span className="text-xl font-bold tracking-tight">Finova<span className="text-indigo-400">.</span></span>
-            </div>
+            <div className="p-6 flex items-center gap-3 border-b border-slate-800"><div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center"><Wallet className="text-white" size={20} /></div><span className="text-xl font-bold tracking-tight">Finova<span className="text-indigo-400">.</span></span></div>
             <nav className="flex-1 px-4 py-6 space-y-2">
               <NavItem icon={<LayoutDashboard size={20} />} label="Overview" isActive={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
               <NavItem icon={<TrendingUp size={20} />} label="Global Markets" isActive={activeTab === 'stocks'} onClick={() => setActiveTab('stocks')} />
@@ -645,20 +471,8 @@ export default function App() {
               <NavItem icon={<CreditCard size={20} />} label="My Cards" isActive={activeTab === 'cards'} onClick={() => setActiveTab('cards')} />
             </nav>
             <div className="p-4 border-t border-slate-800">
-              <div className="mb-4 p-3 bg-slate-800 rounded-xl">
-                <p className="text-xs text-slate-400 mb-2 font-bold uppercase tracking-wider">Current Plan</p>
-                <div className="flex bg-slate-900 p-1 rounded-lg">
-                  <button onClick={() => setUserPlan('free')} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${userPlan === 'free' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Free</button>
-                  <button onClick={() => setUserPlan('pro')} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors flex items-center justify-center gap-1 ${userPlan === 'pro' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Pro <Crown size={10} /></button>
-                </div>
-              </div>
-              <div 
-                className="mt-4 flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 transition-colors"
-                onClick={() => setActiveTab('settings')}
-              >
-                <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold text-white">{userProfile.name.charAt(0).toUpperCase()}</div>
-                <div className="flex-1 overflow-hidden"><p className="text-sm font-medium truncate">{userProfile.name}</p><p className="text-xs text-slate-400 truncate">{userPlan === 'pro' ? 'Pro Investor' : 'Free Account'}</p></div>
-              </div>
+              <div className="mb-4 p-3 bg-slate-800 rounded-xl"><p className="text-xs text-slate-400 mb-2 font-bold uppercase tracking-wider">Current Plan</p><div className="flex bg-slate-900 p-1 rounded-lg"><button onClick={() => setUserPlan('free')} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors ${userPlan === 'free' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>Free</button><button onClick={() => setUserPlan('pro')} className={`flex-1 text-xs py-1.5 rounded-md font-medium transition-colors flex items-center justify-center gap-1 ${userPlan === 'pro' ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}>Pro <Crown size={10} /></button></div></div>
+              <div className="mt-4 flex items-center gap-3 p-3 bg-slate-800 rounded-xl cursor-pointer hover:bg-slate-700 transition-colors" onClick={() => setActiveTab('settings')}><div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold text-white">{userProfile.name.charAt(0).toUpperCase()}</div><div className="flex-1 overflow-hidden"><p className="text-sm font-medium truncate">{userProfile.name}</p><p className="text-xs text-slate-400 truncate">{userPlan === 'pro' ? 'Pro Investor' : 'Free Account'}</p></div></div>
             </div>
           </div>
         </aside>
@@ -669,15 +483,12 @@ export default function App() {
             <div className="flex items-center gap-4">
               <div className="toggleWrapper"><input type="checkbox" className="input" id="themeToggle" checked={isDarkMode} onChange={() => setIsDarkMode(!isDarkMode)} /><label htmlFor="themeToggle" className="toggle"><span className="toggle__handler"><span className="crater crater--1"></span><span className="crater crater--2"></span><span className="crater crater--3"></span></span><span className="star star--1"></span><span className="star star--2"></span><span className="star star--3"></span><span className="star star--4"></span><span className="star star--5"></span><span className="star star--6"></span></label></div>
               <div className="relative"><button onClick={() => setShowNotifications(!showNotifications)} className={`p-2 relative rounded-lg transition-colors ${theme.hoverBg}`}><Bell size={20} /><span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span></button>
-              {showNotifications && (<div className={`absolute right-0 mt-3 w-80 rounded-2xl shadow-xl border ${theme.cardBg} z-50 animate-in fade-in slide-in-from-top-2`}>
-                <div className="p-4 border-b border-slate-100 dark:border-slate-800"><h4 className="font-bold">Notifications</h4></div>
-                <div className="max-h-64 overflow-y-auto">{notifications.map(n => (<div key={n.id} className="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><div className="flex items-start gap-3"><div className={`mt-1 p-1.5 rounded-full ${n.type === 'positive' ? 'bg-emerald-100 text-emerald-600' : (n.type === 'negative' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600')}`}>{n.type === 'positive' ? <TrendingUp size={14} /> : (n.type === 'negative' ? <AlertCircle size={14} /> : <Bell size={14} />)}</div><div><p className="text-sm font-medium">{n.title}</p><p className={`text-xs ${theme.textSub}`}>{n.message}</p><p className="text-[10px] text-slate-400 mt-1">{n.time}</p></div></div></div>))}</div>
-                <div className="p-2 text-center border-t border-slate-100 dark:border-slate-800"><button className="text-xs font-medium text-indigo-600 hover:text-indigo-700 py-2">Mark all as read</button></div>
-              </div>)}</div>
+              {showNotifications && (<div className={`absolute right-0 mt-3 w-80 rounded-2xl shadow-xl border ${theme.cardBg} z-50 animate-in fade-in slide-in-from-top-2`}><div className="p-4 border-b border-slate-100 dark:border-slate-800"><h4 className="font-bold">Notifications</h4></div><div className="max-h-64 overflow-y-auto">{notifications.map(n => (<div key={n.id} className="p-4 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><div className="flex items-start gap-3"><div className={`mt-1 p-1.5 rounded-full ${n.type === 'positive' ? 'bg-emerald-100 text-emerald-600' : (n.type === 'negative' ? 'bg-rose-100 text-rose-600' : 'bg-blue-100 text-blue-600')}`}>{n.type === 'positive' ? <TrendingUp size={14} /> : (n.type === 'negative' ? <AlertCircle size={14} /> : <Bell size={14} />)}</div><div><p className="text-sm font-medium">{n.title}</p><p className={`text-xs ${theme.textSub}`}>{n.message}</p></div></div></div>))}</div><div className="p-2 text-center border-t border-slate-100 dark:border-slate-800"><button className="text-xs font-medium text-indigo-600 hover:text-indigo-700 py-2">Mark all as read</button></div></div>)}</div>
             </div>
           </header>
 
           <main className="flex-1 overflow-y-auto p-4 lg:p-8" onClick={() => setShowNotifications(false)}>
+            {/* ... (DASHBOARD) ... */}
             {activeTab === 'dashboard' && (
               <>
                 <div className="mb-8"><h2 className="text-2xl font-bold">Welcome back, {userProfile.name.split(' ')[0]}! 👋</h2><p className={theme.textSub}>Here's what's happening with your finance today.</p></div>
@@ -711,62 +522,19 @@ export default function App() {
               </>
             )}
 
-            {/* --- ANALYTICS VIEW --- */}
-            {activeTab === 'analytics' && (
-              <div className="max-w-6xl mx-auto">
-                <div className="mb-8"><h2 className="text-2xl font-bold flex items-center gap-3"><PieChart className="text-indigo-500" />Spending & Budgeting</h2><p className={theme.textSub}>Track expenses and set monthly limits.</p></div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <div className={`p-8 rounded-3xl border shadow-sm ${theme.cardBg}`}>
-                    <h3 className="font-bold mb-6">Expense Breakdown</h3>
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
-                      <div className="h-64 w-64"><ResponsiveContainer width="100%" height="100%"><RePieChart><Pie data={expenseBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">{expenseBreakdown.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />))}</Pie><Tooltip formatter={(value) => `₹${value}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} /></RePieChart></ResponsiveContainer></div>
-                      <div className="flex-1 w-full sm:w-auto"><div className="space-y-3">{expenseBreakdown.map((item, index) => (<div key={index} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}></div><span className="text-sm font-medium">{item.name}</span></div><span className="text-sm font-bold">₹{item.value.toLocaleString()}</span></div>))}</div></div>
-                    </div>
-                  </div>
-                  <div className={`p-8 rounded-3xl border shadow-sm ${theme.cardBg}`}>
-                    <h3 className="font-bold mb-6 flex items-center gap-2"><Lock size={18} className="text-emerald-500" /> Budget Goals</h3>
-                    <div className="space-y-6 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                      {budgetProgress.map((item, index) => (
-                        <div key={index}>
-                          <div className="flex justify-between items-center mb-2"><span className="text-sm font-medium">{item.category}</span><div className="flex items-center gap-2">{editingBudgetCategory === item.category ? (<div className="flex items-center gap-1"><input type="number" className={`w-20 px-2 py-1 text-xs rounded border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'}`} placeholder="Limit" value={newBudgetLimit} onChange={(e) => setNewBudgetLimit(e.target.value)} autoFocus /><button onClick={() => updateBudget(item.category)} className="p-1 bg-emerald-100 text-emerald-600 rounded hover:bg-emerald-200"><CheckCircle2 size={14} /></button><button onClick={() => setEditingBudgetCategory(null)} className="p-1 bg-slate-100 text-slate-600 rounded hover:bg-slate-200"><X size={14} /></button></div>) : (<div className="flex items-center gap-2"><span className={`text-xs font-bold ${item.percentage > 100 ? 'text-rose-500' : (item.percentage > 80 ? 'text-amber-500' : 'text-slate-500')}`}>₹{item.spent.toLocaleString()} / ₹{item.limit.toLocaleString()}</span><button onClick={() => { setEditingBudgetCategory(item.category); setNewBudgetLimit(item.limit); }} className="text-slate-400 hover:text-indigo-500 transition-colors"><Edit3 size={14} /></button></div>)}</div></div>
-                          <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-500 ${item.percentage > 100 ? 'bg-rose-500' : (item.percentage > 80 ? 'bg-amber-500' : 'bg-emerald-500')}`} style={{ width: `${Math.min(item.percentage, 100)}%` }}></div></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* --- TRANSACTIONS VIEW --- */}
-            {activeTab === 'transactions' && (
-              <div className="max-w-5xl mx-auto">
-                <div className="mb-8 flex items-center justify-between"><div><h2 className="text-2xl font-bold flex items-center gap-3"><ArrowRightLeft className="text-indigo-500" />Transaction History</h2><p className={theme.textSub}>Manage your income and expenses.</p></div><button onClick={() => setIsTransactionModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"><Plus size={18} /> Add New</button></div>
-                <div className={`rounded-2xl border shadow-sm overflow-hidden ${theme.cardBg}`}><div className="overflow-x-auto"><table className="w-full text-left"><thead className={`text-xs uppercase ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><tr><th className="px-6 py-4 font-semibold">Transaction</th><th className="px-6 py-4 font-semibold">Category</th><th className="px-6 py-4 font-semibold">Date</th><th className="px-6 py-4 font-semibold">Amount</th><th className="px-6 py-4 font-semibold text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{transactions.map((t) => (<tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors`}><td className="px-6 py-4"><div className="font-medium">{t.name}</div><div className={`text-xs ${t.type === 'credit' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'credit' ? 'Income' : 'Expense'}</div></td><td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>{t.category || 'Other'}</span></td><td className={`px-6 py-4 text-sm ${theme.textSub}`}>{t.date}</td><td className={`px-6 py-4 font-bold ${t.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'}`}>{t.type === 'credit' ? '+' : '-'}₹{t.amount.toLocaleString()}</td><td className="px-6 py-4 text-right"><button onClick={() => handleDeleteTransaction(t.id)} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"><Trash2 size={18} /></button></td></tr>))}</tbody></table></div></div>
-              </div>
-            )}
-
-            {/* --- CARDS VIEW --- */}
-            {activeTab === 'cards' && (
-              <div className="max-w-5xl mx-auto">
-                <div className="mb-8 flex items-center justify-between"><div><h2 className="text-2xl font-bold flex items-center gap-3"><CreditCard className="text-indigo-500" />My Cards</h2><p className={theme.textSub}>Manage your payment methods.</p></div><button onClick={() => setIsCardModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"><Plus size={18} /> Add New Card</button></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{cards.map((card) => (<div key={card.id} className={`relative p-6 rounded-3xl text-white bg-gradient-to-br ${card.gradient} shadow-2xl overflow-hidden group hover:scale-[1.02] transition-transform duration-300`}><div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div><div className="absolute -left-8 -bottom-8 w-32 h-32 bg-black/10 rounded-full blur-2xl"></div><div className="flex justify-between items-start mb-8 relative z-10"><div className="text-lg font-bold tracking-wider">{card.bank}</div><div className="italic font-serif opacity-80">{card.type}</div></div><div className="mb-6 relative z-10"><div className="flex items-center gap-2 font-mono text-xl tracking-widest text-shadow-sm">{card.number}<Copy size={14} className="opacity-50 hover:opacity-100 cursor-pointer" /></div></div><div className="flex justify-between items-end relative z-10"><div><div className="text-[10px] uppercase opacity-70 mb-1">Card Holder</div><div className="font-medium tracking-wide">{card.holder}</div></div><div><div className="text-[10px] uppercase opacity-70 mb-1">Expires</div><div className="font-medium tracking-wide">{card.expiry}</div></div></div><button onClick={(e) => { e.stopPropagation(); handleDeleteCard(card.id); }} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} className="text-white" /></button></div>))}<button onClick={() => setIsCardModalOpen(true)} className={`flex flex-col items-center justify-center gap-3 h-56 rounded-3xl border-2 border-dashed ${isDarkMode ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'} transition-all group`}><div className={`p-4 rounded-full ${isDarkMode ? 'bg-slate-800 group-hover:bg-slate-700' : 'bg-white group-hover:bg-indigo-50'} transition-colors shadow-sm`}><Plus size={24} className="text-indigo-500" /></div><span className={`font-medium ${theme.textSub}`}>Add New Card</span></button></div>
-              </div>
-            )}
-
             {/* --- GLOBAL STOCKS TAB --- */}
             {activeTab === 'stocks' && (
               <div className="max-w-6xl mx-auto">
                 <div className="mb-8"><h2 className="text-2xl font-bold flex items-center gap-3 mb-2"><Globe className="text-indigo-500" />Global Stock Market</h2>
                   <div className="flex items-center gap-3 text-xs text-slate-400"><p className={theme.textSub}>Live data from Alpha Vantage API. (Limit: 5 calls/min)</p><div className="flex items-center gap-2">{dataSource === 'Alpha Vantage (Primary)' ? (<span className="flex items-center gap-1 bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full border border-emerald-100 font-medium"><Zap size={10} /> Alpha Vantage</span>) : dataSource.includes('Twelve') ? (<span className="flex items-center gap-1 bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full border border-blue-100 font-medium"><Wifi size={10} /> Twelve Data</span>) : (<span className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full border border-amber-100 font-medium"><CloudLightning size={10} /> {dataSource}</span>)}{lastUpdated && <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200">Updated: {lastUpdated.toLocaleTimeString()}</span>}</div></div>
                 </div>
-                {!ALPHA_VANTAGE_API_KEY && (<div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-100 rounded-xl flex items-start gap-3"><AlertCircle className="text-amber-600 mt-1 flex-shrink-0" size={20} /><div className="text-sm"><h4 className="font-bold text-amber-900">API Key Missing</h4><p className="text-amber-700 mt-1">You have not provided an Alpha Vantage API Key. The app is running in offline mode. Please add your key to <code>App.jsx</code> to see real live market data.</p></div></div>)}
+                
                 <div className="flex items-center gap-4 max-w-md mb-8">
                   <div className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border transition-colors ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}><Search size={20} className="text-slate-400" /><input type="text" placeholder="Search stocks (e.g. RELIANCE.BSE, AAPL)" className={`bg-transparent outline-none w-full text-sm ${isDarkMode ? 'text-white placeholder-slate-500' : 'text-slate-900 placeholder-slate-400'}`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} /></div>
                   <button onClick={handleManualRefresh} className={`p-3 rounded-xl transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:text-white' : 'bg-white text-slate-500 hover:text-slate-900'} border ${isDarkMode ? 'border-slate-700' : 'border-slate-200'}`} title="Refresh Prices"><RefreshCw size={20} /></button>
                   <button onClick={handleSearch} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-colors">{loading ? 'Searching...' : 'Search'}</button>
                 </div>
-                {loading ? (<div className="grid grid-cols-1 md:grid-cols-3 gap-6">{[1,2,3].map(i => (<div key={i} className={`h-40 rounded-2xl animate-pulse ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>))}</div>) : (
+                {loading ? (<div className="flex justify-center py-12"><Loader2 size={32} className="text-indigo-500 animate-spin" /></div>) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {stockData.length > 0 ? stockData.map((stock) => (
                       <div key={stock.id} className={`p-6 rounded-2xl border shadow-sm hover:shadow-lg transition-all ${theme.cardBg} flex flex-col justify-between relative overflow-hidden`}>
@@ -783,143 +551,36 @@ export default function App() {
                            </div>
                         </div>
                       </div>
-                    )) : <div className="col-span-3 text-center py-12 text-slate-400">Search for a stock symbol (e.g. RELIANCE.BSE, AAPL)</div>}
+                    )) : !error && <div className="col-span-3 text-center py-12 text-slate-400">Search for a stock symbol (e.g., RELIANCE.BSE, AAPL)</div>}
                   </div>
                 )}
                 {error && (<div className="mt-8 bg-rose-50 text-rose-700 p-4 rounded-xl flex items-center gap-3 justify-center"><AlertCircle size={20} /><span>{error}</span></div>)}
               </div>
             )}
 
-            {/* --- SETTINGS TAB --- */}
-            {activeTab === 'settings' && (
-              <div className="max-w-2xl mx-auto">
-                <div className="mb-8"><h2 className="text-2xl font-bold flex items-center gap-3"><Settings className="text-indigo-500" /> Settings & Preferences</h2><p className={theme.textSub}>Manage your account and app settings.</p></div>
-                <div className="space-y-6">
-                  <div className={`p-6 rounded-2xl border shadow-sm ${theme.cardBg}`}>
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><User size={18} className="text-indigo-500" /> User Profile</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-4"><div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-2xl font-bold text-indigo-600">{userProfile.name.charAt(0).toUpperCase()}</div><div className="flex-1"><label className="text-xs font-bold uppercase tracking-wider mb-1 block">Full Name</label><input type="text" className={`w-full px-4 py-2 rounded-lg border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={userProfile.name} onChange={(e) => setUserProfile({...userProfile, name: e.target.value})} /></div></div>
-                      <div><label className="text-xs font-bold uppercase tracking-wider mb-1 block">Email Address</label><div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><Mail size={16} className="text-slate-400" /><input type="email" className="bg-transparent outline-none w-full" value={userProfile.email} onChange={(e) => setUserProfile({...userProfile, email: e.target.value})} /></div></div>
-                    </div>
-                  </div>
-                  <div className={`p-6 rounded-2xl border shadow-sm ${theme.cardBg}`}>
-                    <h3 className="font-bold mb-4 flex items-center gap-2"><Shield size={18} className="text-indigo-500" /> App Preferences</h3>
-                    <div className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><div className="flex items-center gap-3"><div className={`p-2 rounded-lg ${isDarkMode ? 'bg-indigo-900 text-indigo-300' : 'bg-indigo-50 text-indigo-600'}`}>{isDarkMode ? <Moon size={20} /> : <Sun size={20} />}</div><div><p className="font-medium">Dark Mode</p><p className={`text-xs ${theme.textSub}`}>Switch between light and dark themes</p></div></div><div className="toggleWrapper scale-75 origin-right"><input type="checkbox" className="input" checked={isDarkMode} onChange={() => setIsDarkMode(!isDarkMode)} /><label className="toggle"><span className="toggle__handler"><span className="crater crater--1"></span><span className="crater crater--2"></span><span className="crater crater--3"></span></span><span className="star star--1"></span><span className="star star--2"></span><span className="star star--3"></span><span className="star star--4"></span><span className="star star--5"></span><span className="star star--6"></span></label></div></div>
-                  </div>
-                  <div className="p-6 rounded-2xl border border-rose-100 bg-rose-50/50 dark:bg-rose-900/10 dark:border-rose-900/30"><h3 className="font-bold mb-4 flex items-center gap-2 text-rose-600"><AlertCircle size={18} /> Danger Zone</h3><p className="text-sm text-slate-500 mb-4">Resetting the app will clear all your transactions, cards, and profile settings. This action cannot be undone.</p><button onClick={handleResetApp} className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium rounded-lg transition-colors shadow-sm"><LogOut size={16} /> Reset App Data</button></div>
-                </div>
-              </div>
-            )}
+            {/* ... (OTHER TABS - Analytics, Transactions, Cards, Settings) ... */}
+            {/* Same as previous version, omitted for brevity but included in full file */}
+            {activeTab === 'analytics' && (<div className="max-w-6xl mx-auto"><div className="mb-8"><h2 className="text-2xl font-bold flex items-center gap-3"><PieChart className="text-indigo-500" />Spending & Budgeting</h2><p className={theme.textSub}>Track expenses and set monthly limits.</p></div><div className="grid grid-cols-1 lg:grid-cols-2 gap-8"><div className={`p-8 rounded-3xl border shadow-sm ${theme.cardBg}`}><h3 className="font-bold mb-6">Expense Breakdown</h3><div className="flex flex-col sm:flex-row items-center justify-center gap-8"><div className="h-64 w-64"><ResponsiveContainer width="100%" height="100%"><RePieChart><Pie data={expenseBreakdown} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">{expenseBreakdown.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />))}</Pie><Tooltip formatter={(value) => `₹${value}`} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} /></RePieChart></ResponsiveContainer></div><div className="flex-1 w-full sm:w-auto"><div className="space-y-3">{expenseBreakdown.map((item, index) => (<div key={index} className="flex items-center justify-between"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: PIE_COLORS[index % PIE_COLORS.length] }}></div><span className="text-sm font-medium">{item.name}</span></div><span className="text-sm font-bold">₹{item.value.toLocaleString()}</span></div>))}</div></div></div></div><div className={`p-8 rounded-3xl border shadow-sm ${theme.cardBg}`}><h3 className="font-bold mb-6 flex items-center gap-2"><Lock size={18} className="text-emerald-500" /> Budget Goals</h3><div className="space-y-6 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">{budgetProgress.map((item, index) => (<div key={index}><div className="flex justify-between items-center mb-2"><span className="text-sm font-medium">{item.category}</span><div className="flex items-center gap-2">{editingBudgetCategory === item.category ? (<div className="flex items-center gap-1"><input type="number" className={`w-20 px-2 py-1 text-xs rounded border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-600' : 'bg-white border-slate-300'}`} placeholder="Limit" value={newBudgetLimit} onChange={(e) => setNewBudgetLimit(e.target.value)} autoFocus /><button onClick={() => updateBudget(item.category)} className="p-1 bg-emerald-100 text-emerald-600 rounded hover:bg-emerald-200"><CheckCircle2 size={14} /></button><button onClick={() => setEditingBudgetCategory(null)} className="p-1 bg-slate-100 text-slate-600 rounded hover:bg-slate-200"><X size={14} /></button></div>) : (<div className="flex items-center gap-2"><span className={`text-xs font-bold ${item.percentage > 100 ? 'text-rose-500' : (item.percentage > 80 ? 'text-amber-500' : 'text-slate-500')}`}>₹{item.spent.toLocaleString()} / ₹{item.limit.toLocaleString()}</span><button onClick={() => { setEditingBudgetCategory(item.category); setNewBudgetLimit(item.limit); }} className="text-slate-400 hover:text-indigo-500 transition-colors"><Edit3 size={14} /></button></div>)}</div></div><div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all duration-500 ${item.percentage > 100 ? 'bg-rose-500' : (item.percentage > 80 ? 'bg-amber-500' : 'bg-emerald-500')}`} style={{ width: `${Math.min(item.percentage, 100)}%` }}></div></div></div>))}</div></div></div></div>)}
+
+            {activeTab === 'transactions' && (<div className="max-w-5xl mx-auto"><div className="mb-8 flex items-center justify-between"><div><h2 className="text-2xl font-bold flex items-center gap-3"><ArrowRightLeft className="text-indigo-500" />Transaction History</h2><p className={theme.textSub}>Manage your income and expenses.</p></div><button onClick={() => setIsTransactionModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"><Plus size={18} /> Add New</button></div><div className={`rounded-2xl border shadow-sm overflow-hidden ${theme.cardBg}`}><div className="overflow-x-auto"><table className="w-full text-left"><thead className={`text-xs uppercase ${isDarkMode ? 'bg-slate-800 text-slate-400' : 'bg-slate-50 text-slate-500'}`}><tr><th className="px-6 py-4 font-semibold">Transaction</th><th className="px-6 py-4 font-semibold">Category</th><th className="px-6 py-4 font-semibold">Date</th><th className="px-6 py-4 font-semibold">Amount</th><th className="px-6 py-4 font-semibold text-right">Actions</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800">{transactions.map((t) => (<tr key={t.id} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors`}><td className="px-6 py-4"><div className="font-medium">{t.name}</div><div className={`text-xs ${t.type === 'credit' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type === 'credit' ? 'Income' : 'Expense'}</div></td><td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isDarkMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'}`}>{t.category || 'Other'}</span></td><td className={`px-6 py-4 text-sm ${theme.textSub}`}>{t.date}</td><td className={`px-6 py-4 font-bold ${t.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'}`}>{t.type === 'credit' ? '+' : '-'}₹{t.amount.toLocaleString()}</td><td className="px-6 py-4 text-right"><button onClick={() => handleDeleteTransaction(t.id)} className="p-2 hover:bg-rose-50 text-slate-400 hover:text-rose-500 rounded-lg transition-colors"><Trash2 size={18} /></button></td></tr>))}</tbody></table></div></div></div>)}
+
+            {activeTab === 'cards' && (<div className="max-w-5xl mx-auto"><div className="mb-8 flex items-center justify-between"><div><h2 className="text-2xl font-bold flex items-center gap-3"><CreditCard className="text-indigo-500" />My Cards</h2><p className={theme.textSub}>Manage your payment methods.</p></div><button onClick={() => setIsCardModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors"><Plus size={18} /> Add New Card</button></div><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">{cards.map((card) => (<div key={card.id} className={`relative p-6 rounded-3xl text-white bg-gradient-to-br ${card.gradient} shadow-2xl overflow-hidden group hover:scale-[1.02] transition-transform duration-300`}><div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div><div className="absolute -left-8 -bottom-8 w-32 h-32 bg-black/10 rounded-full blur-2xl"></div><div className="flex justify-between items-start mb-8 relative z-10"><div className="text-lg font-bold tracking-wider">{card.bank}</div><div className="italic font-serif opacity-80">{card.type}</div></div><div className="mb-6 relative z-10"><div className="flex items-center gap-2 font-mono text-xl tracking-widest text-shadow-sm">{card.number}<Copy size={14} className="opacity-50 hover:opacity-100 cursor-pointer" /></div></div><div className="flex justify-between items-end relative z-10"><div><div className="text-[10px] uppercase opacity-70 mb-1">Card Holder</div><div className="font-medium tracking-wide">{card.holder}</div></div><div><div className="text-[10px] uppercase opacity-70 mb-1">Expires</div><div className="font-medium tracking-wide">{card.expiry}</div></div></div><button onClick={(e) => { e.stopPropagation(); handleDeleteCard(card.id); }} className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 size={16} className="text-white" /></button></div>))}<button onClick={() => setIsCardModalOpen(true)} className={`flex flex-col items-center justify-center gap-3 h-56 rounded-3xl border-2 border-dashed ${isDarkMode ? 'border-slate-800 bg-slate-900/50 hover:bg-slate-800' : 'border-slate-200 bg-slate-50 hover:bg-slate-100'} transition-all group`}><div className={`p-4 rounded-full ${isDarkMode ? 'bg-slate-800 group-hover:bg-slate-700' : 'bg-white group-hover:bg-indigo-50'} transition-colors shadow-sm`}><Plus size={24} className="text-indigo-500" /></div><span className={`font-medium ${theme.textSub}`}>Add New Card</span></button></div></div>)}
+
+            {activeTab === 'settings' && (<div className="max-w-2xl mx-auto"><div className="mb-8"><h2 className="text-2xl font-bold flex items-center gap-3"><Settings className="text-indigo-500" /> Settings & Preferences</h2><p className={theme.textSub}>Manage your account and app settings.</p></div><div className="space-y-6"><div className={`p-6 rounded-2xl border shadow-sm ${theme.cardBg}`}><h3 className="font-bold mb-4 flex items-center gap-2"><User size={18} className="text-indigo-500" /> User Profile</h3><div className="space-y-4"><div className="flex items-center gap-4"><div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-2xl font-bold text-indigo-600">{userProfile.name.charAt(0).toUpperCase()}</div><div className="flex-1"><label className="text-xs font-bold uppercase tracking-wider mb-1 block">Full Name</label><input type="text" className={`w-full px-4 py-2 rounded-lg border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={userProfile.name} onChange={(e) => setUserProfile({...userProfile, name: e.target.value})} /></div></div><div><label className="text-xs font-bold uppercase tracking-wider mb-1 block">Email Address</label><div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}><Mail size={16} className="text-slate-400" /><input type="email" className="bg-transparent outline-none w-full" value={userProfile.email} onChange={(e) => setUserProfile({...userProfile, email: e.target.value})} /></div></div></div></div><div className={`p-6 rounded-2xl border shadow-sm ${theme.cardBg}`}><h3 className="font-bold mb-4 flex items-center gap-2"><Shield size={18} className="text-indigo-500" /> App Preferences</h3><div className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"><div className="flex items-center gap-3"><div className={`p-2 rounded-lg ${isDarkMode ? 'bg-indigo-900 text-indigo-300' : 'bg-indigo-50 text-indigo-600'}`}>{isDarkMode ? <Moon size={20} /> : <Sun size={20} />}</div><div><p className="font-medium">Dark Mode</p><p className={`text-xs ${theme.textSub}`}>Switch between light and dark themes</p></div></div><div className="toggleWrapper scale-75 origin-right"><input type="checkbox" className="input" checked={isDarkMode} onChange={() => setIsDarkMode(!isDarkMode)} /><label className="toggle"><span className="toggle__handler"><span className="crater crater--1"></span><span className="crater crater--2"></span><span className="crater crater--3"></span></span><span className="star star--1"></span><span className="star star--2"></span><span className="star star--3"></span><span className="star star--4"></span><span className="star star--5"></span><span className="star star--6"></span></label></div></div></div><div className="p-6 rounded-2xl border border-rose-100 bg-rose-50/50 dark:bg-rose-900/10 dark:border-rose-900/30"><h3 className="font-bold mb-4 flex items-center gap-2 text-rose-600"><AlertCircle size={18} /> Danger Zone</h3><p className="text-sm text-slate-500 mb-4">Resetting the app will clear all your transactions, cards, and profile settings. This action cannot be undone.</p><button onClick={handleResetApp} className="flex items-center gap-2 px-4 py-2 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 font-medium rounded-lg transition-colors shadow-sm"><LogOut size={16} /> Reset App Data</button></div></div></div>)}
+
           </main>
 
           {/* --- TRANSACTION MODAL --- */}
-          {isTransactionModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-              <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}>
-                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold">Add Transaction</h3><button onClick={() => setIsTransactionModalOpen(false)}><X size={20} /></button></div>
-                <div className="space-y-4">
-                  <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Name</label><input type="text" placeholder="e.g. Grocery, Freelance" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newTransaction.name} onChange={(e) => setNewTransaction({...newTransaction, name: e.target.value})} /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Amount (₹)</label><input type="number" placeholder="0.00" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newTransaction.amount} onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})} /></div>
-                    <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Category</label><select className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newTransaction.category} onChange={(e) => setNewTransaction({...newTransaction, category: e.target.value})}>{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
-                  </div>
-                  <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Type</label><div className="flex gap-4"><button onClick={() => setNewTransaction({...newTransaction, type: 'credit'})} className={`flex-1 py-3 rounded-xl font-medium border-2 transition-all ${newTransaction.type === 'credit' ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-transparent bg-slate-100 text-slate-500'}`}>Income</button><button onClick={() => setNewTransaction({...newTransaction, type: 'debit'})} className={`flex-1 py-3 rounded-xl font-medium border-2 transition-all ${newTransaction.type === 'debit' ? 'border-rose-500 bg-rose-50 text-rose-600' : 'border-transparent bg-slate-100 text-slate-500'}`}>Expense</button></div></div>
-                  <button onClick={handleAddTransaction} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold mt-4">Save Transaction</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {isTransactionModalOpen && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"><div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}><div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold">Add Transaction</h3><button onClick={() => setIsTransactionModalOpen(false)}><X size={20} /></button></div><div className="space-y-4"><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Name</label><input type="text" placeholder="e.g. Grocery, Freelance" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newTransaction.name} onChange={(e) => setNewTransaction({...newTransaction, name: e.target.value})} /></div><div className="grid grid-cols-2 gap-4"><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Amount (₹)</label><input type="number" placeholder="0.00" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newTransaction.amount} onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})} /></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Category</label><select className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newTransaction.category} onChange={(e) => setNewTransaction({...newTransaction, category: e.target.value})}>{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Type</label><div className="flex gap-4"><button onClick={() => setNewTransaction({...newTransaction, type: 'credit'})} className={`flex-1 py-3 rounded-xl font-medium border-2 transition-all ${newTransaction.type === 'credit' ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-transparent bg-slate-100 text-slate-500'}`}>Income</button><button onClick={() => setNewTransaction({...newTransaction, type: 'debit'})} className={`flex-1 py-3 rounded-xl font-medium border-2 transition-all ${newTransaction.type === 'debit' ? 'border-rose-500 bg-rose-50 text-rose-600' : 'border-transparent bg-slate-100 text-slate-500'}`}>Expense</button></div></div><button onClick={handleAddTransaction} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold mt-4">Save Transaction</button></div></div></div>)}
 
           {/* --- ADD CARD MODAL --- */}
-          {isCardModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-              <div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}>
-                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold">Add New Card</h3><button onClick={() => setIsCardModalOpen(false)}><X size={20} /></button></div>
-                <div className="space-y-4">
-                  <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Bank Name</label><input type="text" placeholder="e.g. HDFC Bank" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.bank} onChange={(e) => setNewCard({...newCard, bank: e.target.value})} /></div>
-                  <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Card Number (Masked)</label><input type="text" placeholder="**** **** **** 1234" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.number} onChange={(e) => setNewCard({...newCard, number: e.target.value})} /></div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Expiry</label><input type="text" placeholder="MM/YY" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.expiry} onChange={(e) => setNewCard({...newCard, expiry: e.target.value})} /></div>
-                    <div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Type</label><select className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.type} onChange={(e) => setNewCard({...newCard, type: e.target.value})}><option value="Visa">Visa</option><option value="Mastercard">Mastercard</option><option value="Amex">Amex</option></select></div>
-                  </div>
-                  <div>
-                    <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Card Style</label>
-                    <div className="flex gap-2">
-                      {CARD_GRADIENTS.map((gradient, idx) => (<button key={idx} onClick={() => setNewCard({...newCard, gradient})} className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} ${newCard.gradient === gradient ? 'ring-2 ring-offset-2 ring-indigo-500' : ''}`} />))}
-                    </div>
-                  </div>
-                  <button onClick={handleAddCard} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold mt-4">Save Card</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {isCardModalOpen && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"><div className={`w-full max-w-md rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}><div className="flex justify-between items-center mb-6"><h3 className="text-xl font-bold">Add New Card</h3><button onClick={() => setIsCardModalOpen(false)}><X size={20} /></button></div><div className="space-y-4"><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Bank Name</label><input type="text" placeholder="e.g. HDFC Bank" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.bank} onChange={(e) => setNewCard({...newCard, bank: e.target.value})} /></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Card Number (Masked)</label><input type="text" placeholder="**** **** **** 1234" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.number} onChange={(e) => setNewCard({...newCard, number: e.target.value})} /></div><div className="grid grid-cols-2 gap-4"><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Expiry</label><input type="text" placeholder="MM/YY" className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.expiry} onChange={(e) => setNewCard({...newCard, expiry: e.target.value})} /></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Type</label><select className={`w-full px-4 py-3 rounded-xl border outline-none ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} value={newCard.type} onChange={(e) => setNewCard({...newCard, type: e.target.value})}><option value="Visa">Visa</option><option value="Mastercard">Mastercard</option><option value="Amex">Amex</option></select></div></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Card Style</label><div className="flex gap-2">{CARD_GRADIENTS.map((gradient, idx) => (<button key={idx} onClick={() => setNewCard({...newCard, gradient})} className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} ${newCard.gradient === gradient ? 'ring-2 ring-offset-2 ring-indigo-500' : ''}`} />))}</div></div><button onClick={handleAddCard} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold mt-4">Save Card</button></div></div></div>)}
 
           {/* --- BUY STOCK MODAL --- */}
-          {isBuyModalOpen && selectedStock && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-              <div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}>
-                <div className="flex justify-between items-center mb-6">
-                  <div><h3 className="text-xl font-bold">Buy Stock</h3><p className="text-sm text-slate-500">{selectedStock.symbol}</p></div>
-                  <button onClick={() => setIsBuyModalOpen(false)}><X size={20} /></button>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                    <span className="text-sm">Current Price</span>
-                    <span className="font-bold text-lg">₹{selectedStock.current_price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                  </div>
-                  <div>
-                    <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Quantity</label>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => setTradeQuantity(Math.max(1, tradeQuantity - 1))} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">-</button>
-                      <input type="number" className="flex-1 text-center font-bold text-xl bg-transparent outline-none" value={tradeQuantity} onChange={(e) => setTradeQuantity(Math.max(1, parseInt(e.target.value) || 1))} />
-                      <button onClick={() => setTradeQuantity(tradeQuantity + 1)} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">+</button>
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                    <span className="text-sm font-medium">Total Cost</span>
-                    <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">₹{(selectedStock.current_price * tradeQuantity).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                  </div>
-                  <button onClick={executeBuy} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold mt-2 shadow-lg shadow-emerald-500/20 transition-all">Confirm Purchase</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {isBuyModalOpen && selectedStock && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"><div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}><div className="flex justify-between items-center mb-6"><div><h3 className="text-xl font-bold">Buy Stock</h3><p className="text-sm text-slate-500">{selectedStock.symbol}</p></div><button onClick={() => setIsBuyModalOpen(false)}><X size={20} /></button></div><div className="space-y-4"><div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl"><span className="text-sm">Current Price</span><span className="font-bold text-lg">₹{selectedStock.current_price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Quantity</label><div className="flex items-center gap-3"><button onClick={() => setTradeQuantity(Math.max(1, tradeQuantity - 1))} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">-</button><input type="number" className="flex-1 text-center font-bold text-xl bg-transparent outline-none" value={tradeQuantity} onChange={(e) => setTradeQuantity(Math.max(1, parseInt(e.target.value) || 1))} /><button onClick={() => setTradeQuantity(tradeQuantity + 1)} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">+</button></div></div><div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center"><span className="text-sm font-medium">Total Cost</span><span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">₹{(selectedStock.current_price * tradeQuantity).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><button onClick={executeBuy} className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-bold mt-2 shadow-lg shadow-emerald-500/20 transition-all">Confirm Purchase</button></div></div></div>)}
 
           {/* --- SELL STOCK MODAL --- */}
-          {isSellModalOpen && selectedStock && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-              <div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}>
-                <div className="flex justify-between items-center mb-6">
-                  <div><h3 className="text-xl font-bold">Sell Stock</h3><p className="text-sm text-slate-500">{selectedStock.symbol}</p></div>
-                  <button onClick={() => setIsSellModalOpen(false)}><X size={20} /></button>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl">
-                    <span className="text-sm">Current Value</span>
-                    <span className="font-bold text-lg">₹{selectedStock.current_price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                  </div>
-                  <div>
-                    <label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Quantity (Max: {portfolio.find(p => p.symbol === selectedStock.symbol)?.quantity})</label>
-                    <div className="flex items-center gap-3">
-                      <button onClick={() => setTradeQuantity(Math.max(1, tradeQuantity - 1))} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">-</button>
-                      <input 
-                        type="number" 
-                        className="flex-1 text-center font-bold text-xl bg-transparent outline-none" 
-                        value={tradeQuantity} 
-                        onChange={(e) => setTradeQuantity(Math.min(Math.max(1, parseInt(e.target.value) || 1), portfolio.find(p => p.symbol === selectedStock.symbol)?.quantity || 1))} 
-                      />
-                      <button onClick={() => setTradeQuantity(Math.min(tradeQuantity + 1, portfolio.find(p => p.symbol === selectedStock.symbol)?.quantity))} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">+</button>
-                    </div>
-                  </div>
-                  <div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                    <span className="text-sm font-medium">Total Return</span>
-                    <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">₹{(selectedStock.current_price * tradeQuantity).toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                  </div>
-                  <button onClick={executeSell} className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold mt-2 shadow-lg shadow-rose-500/20 transition-all">Confirm Sale</button>
-                </div>
-              </div>
-            </div>
-          )}
+          {isSellModalOpen && selectedStock && (<div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"><div className={`w-full max-w-sm rounded-2xl shadow-2xl p-6 ${theme.modalBg} animate-in fade-in zoom-in-95 duration-200`}><div className="flex justify-between items-center mb-6"><div><h3 className="text-xl font-bold">Sell Stock</h3><p className="text-sm text-slate-500">{selectedStock.symbol}</p></div><button onClick={() => setIsSellModalOpen(false)}><X size={20} /></button></div><div className="space-y-4"><div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-3 rounded-xl"><span className="text-sm">Current Value</span><span className="font-bold text-lg">₹{selectedStock.current_price.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><div><label className={`text-xs font-bold uppercase tracking-wider mb-2 block ${theme.textSub}`}>Quantity (Max: {portfolio.find(p => p.symbol === selectedStock.symbol)?.quantity})</label><div className="flex items-center gap-3"><button onClick={() => setTradeQuantity(Math.max(1, tradeQuantity - 1))} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">-</button><input type="number" className="flex-1 text-center font-bold text-xl bg-transparent outline-none" value={tradeQuantity} onChange={(e) => setTradeQuantity(Math.min(Math.max(1, parseInt(e.target.value) || 1), portfolio.find(p => p.symbol === selectedStock.symbol)?.quantity || 1))} /><button onClick={() => setTradeQuantity(Math.min(tradeQuantity + 1, portfolio.find(p => p.symbol === selectedStock.symbol)?.quantity))} className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-lg font-bold">+</button></div></div><div className="pt-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center"><span className="text-sm font-medium">Total Return</span><span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">₹{(selectedStock.current_price * tradeQuantity).toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div><button onClick={executeSell} className="w-full py-3 bg-rose-500 hover:bg-rose-600 text-white rounded-xl font-bold mt-2 shadow-lg shadow-rose-500/20 transition-all">Confirm Sale</button></div></div></div>)}
 
           {/* --- ANALYSIS MODAL --- */}
           {analysisModalOpen && (
