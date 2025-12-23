@@ -9,7 +9,7 @@
       "destination": "https://prishaa-stockpredictor.hf.space/api/analyze"
     },
     {
-      "source": "/ai-endpoint/:path*",
+      "source": "/ai-endpoint/",
       "destination": "https://prishaa-stockpredictor.hf.space/api/analyze"
     },
     {
